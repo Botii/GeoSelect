@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+   <head>
+      <meta charset="UTF-8" />
+      <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>GeoSelect</title>
+
+      <style>
+                
+        /* This application was developed and tested on a mac using chrome browser. However, I tested with safari and edge and it has worked for me. 
+            it does however fail to load a certain icon on edge which I think is a browser thing.  */        
+
+        /* search */
+        form {
+            background-color: #145DA0;
+            width: 300px;
+            height: 44px;
+            border-radius: 5px;
+            display: flex;  
+            flex-direction: row;
+            align-items: center;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 10px;
+        }
+
+        #searchButton{
+            width: 200px;
+            height: 30px;
+            align-items: center;
+            margin-left: auto;
+            margin-right: 10px; 
+        }
+        
+        input {
+            all: unset;
+            font: 16px system-ui;
+            color: #fff;
+            height: 100%;
+            width: 100%;
+            padding: 6px 10px;
+        }
+
+        ::placeholder {
+            color: #fff;
+            opacity: 0.7; 
+        }
+
+
+        /* summary*/
+        h1{
+            text-align: center;
+        }
+
+
+        p {
+            color: #145DA0;
+            width: 50%;
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+
+        /* Table */     
+        table {
+
+            margin-left: auto;
+            margin-right: auto;
+            border-collapse: collapse;
+            width: 50%;
+         }
+
+         /* size of the image*/
+         table img {
+            width: 50px; 
+            height: auto; 
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even){background-color: #f2f2f2}
+
+        th {
+            background-color: #145DA0;
+            color: white;
+        }
+
+        /* Button */
+        button {
+            margin:auto;
+            display:block;
+        }
+
+        label{
+            text-align: center;
+        }
+                
+        select{
+            text-align: center;
+        
+        }
+    
+      </style>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+    <script>
+    $(() => {
+        let allData;
+
+        const getOptions = () => {
+            $.getJSON(
+                'https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/regions',
+                function (data) {
+                    $.each(data, function(index, value){
+                        $('#Regions').append($('<option>', {
+                                        value: value,
+                                        text: value
+                        }));                    
+                    });
+                getInfo();
+                }
+            )
+        }
+        
+
+        //make the api call
+        getOptions();
+
+        //get the data
+        const getInfo = () => {
+            //change table content depending on if the option has changed
+            $('#Regions').change(function() {
+        
+                //which region should be shown
+                const url = 'https://www.cs.kent.ac.uk/people/staff/yh/api/country-data/countries/region/' + $(this).val();
+                
+                // AJAX call
+                $.getJSON(url, (data) => {
+                    //put the region data into table
+                    allData = data;
+                    //put the data into the table
+                    putInTable(data, $(this).val())
+                    
+                })
+
+            });
+
+            
+        //function for adding the data into the table
+        const putInTable = (data,region) => {
+            //clear table after another option has been chosen
+            $("#countries td").remove();
+            //loop through each object and add it to the able as a row
+            $.each(data, function(index, value){
+
+                const population_density = data[index].population/data[index].area;    
+                //add each object into the table by adding row by row. 
+                $('#countries').append("<tr><td>" + data[index].code + "</td><td><img src=" + data[index].flag + "></td><td>" + data[index].name + "</td><td>" + data[index].capital + "</td><td>" + data[index].population + "</td><td>" + data[index].area + "</td> <td>" + population_density.toFixed(1)+ "</td>                      </tr>");
+ 
+                //add to p tag
+                $('#total').text("In " + region + " there are " + totalNumberCountry(data, region) + " countries.");
+                    
+                //add to tag
+                $('#largest').text(data[largestCountry(data, region)].name + " is the largest country.");
+
+                //add to tag
+                $('#mostpopulated').text(data[mostPopulated(data, region)].name + " is the most populated country.");                    
+                
+                    
+            });
+            }
+
+            // Adding found countries into a empty table
+            const putInTablForSearch = (data) => {
+                //loop through each object and add it to the able as a row
+                $.each(data, function(index, value){
+                    const population_density = data[index].population/data[index].area;    
+                    //add each object into the table by adding row by row. 
+                    $('#countries').append("<tr><td>" + data[index].code + "</td><td><img src=" + data[index].flag + "></td><td>" + data[index].name + "</td><td>" + data[index].capital + "</td><td>" + data[index].population + "</td><td>" + data[index].area + "</td> <td>" + population_density.toFixed(1)+ "</td>                      </tr>");
+
+                });
+            }
+
+
+        //return the total number of countries for that region
+        const totalNumberCountry = (data, region) => {
+            //keep track of every country object we visit
+            var count = 0;
+            //which region does the country have to be in?
+            const regionCountry = region;
+
+            //loop through each object. if the objects region is the region we are looking for then increment count.
+            $.each(data, function(index, value){
+                if(data[index].region = regionCountry){
+                    count++;
+                }
+            });
+                //return number of countries in the speficied region 
+                return count;
+            }
+
+
+
+        const largestCountry = (data, region) => {
+            //the current largest country we jave visited
+            var largestCountryIndex = 0;
+            //loop through each of the objects
+            $.each(data, function(index, value){
+                //if the current largest country's area less than the one we are currently at and is in the same region change the variable to hold the new largest country we have visited
+                if(data[largestCountryIndex].area < data[index].area && data[index].region == region){
+                    largestCountryIndex = index;
+                }
+            
+            });
+            return largestCountryIndex;        
+        }
+
+
+        const mostPopulated = (data, region) => {
+            //the current most populated country we jave visited
+            var mostPopulatedIndex = 0;
+
+            //loop through each of the objects
+            $.each(data, function(index, value){
+                //if the current largest country's population less than the one we are currently at and is in the same region change the variable to hold the new most populated country we have visited
+                if(data[mostPopulatedIndex].population < data[index].population && data[index].region == region){
+                    mostPopulatedIndex = index;
+                }
+            });
+            return mostPopulatedIndex;        
+        }
+
+        //Searhing 
+        $('#searchButton').on('click', function (event) {
+            //prevent the page from refreshing
+            event.preventDefault();
+
+            try { //user may try search without choosing a region. Put error message if that happens.
+
+            //make the search query lower case
+            const searchQuery = $('#query').val().toLowerCase(); 
+
+            //filter through the countries in the table 
+            const filteredCountriesByName = allData.filter(country =>
+                //find name of country including the search string
+                country.name.toLowerCase().includes(searchQuery)  ||
+                //find the capital that includes the string
+                (country.capital && country.capital.toLowerCase().includes(searchQuery))
+            );
+
+            //remove previous table to that new data can be added
+            $("#countries td").remove();
+
+            //put the findings in a table
+            putInTablForSearch(filteredCountriesByName, 'Search Results');
+
+
+            //catch the error
+            }catch(error){
+                //give the user an alert
+                alert(" --- Please, choose a region before trying to search --- ");
+            }
+
+            });
+        }
+    })
+
+    </script>
+   </head>
+
+
+
+   <body style="background-color: #B1D4E0;">
+
+        <!------------------TITLE AND BRIEF--------------------->
+        <h1>Web Development A1 - GeoSelect</h1>
+        <p>"GeoSelect" is a user-friendly web application that allows users to easily 
+            select a region of interest and then access detailed information about the 
+            countries within that region. They can also search for any countries within 
+            that region.</p>
+     
+
+        <!------------------Selection--------------------->
+
+        <div style="text-align: center;">
+
+            <label for="Regions">Choose a Region:</label>
+            
+            <select name="Regions" id="Regions">
+                <option disabled selected value> -- select an region -- </option>
+                    <!---Add options here---->
+            </select>
+
+        </div>
+        
+
+         <!------------------Summary text --------------------->
+        <p id="total"></p>
+        <p id="largest"></p>
+        <p id="mostpopulated"></p>
+
+
+        <!------------------Searching--------------------->
+
+        <form id="form" role="search">
+            <input type="search" id="query" name="q"
+             placeholder="Search..."
+             aria-label="Search through site content">
+            <button id="searchButton">Search</button>
+        </form>
+        
+
+        <!------------------TABLE--------------------->
+        <table id="countries">
+            <thead>
+            <tr>
+                <th>Country Code</th>
+                <th>Flag</th>
+                <th>Name</th>
+                <th>Capital</th>
+                <th>Population</th>
+                <th>Area</th>
+                <th>Population Density</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+      </table>
+
+   </body>
+
+</html>
